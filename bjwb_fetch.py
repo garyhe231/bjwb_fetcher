@@ -58,6 +58,9 @@ def fetch(url: str, binary: bool = False, encoding: str = "utf-8"):
     except URLError as e:
         print(f"  URL error ({e.reason}): {url}")
         return None
+    except Exception as e:
+        print(f"  fetch error ({e}): {url}")
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -383,9 +386,7 @@ _DATE_FORMATS = [
     "%Y-%m-%d",     # 2026-03-10
     "%Y/%m/%d",     # 2026/03/10
     "%Y.%m.%d",     # 2026.03.10
-    "%d/%m/%Y",     # 10/03/2026
-    "%m/%d/%Y",     # 03/10/2026
-    "%d-%m-%Y",     # 10-03-2026
+    "%m/%d/%Y",     # 03/10/2026  (MM/DD/YYYY — unambiguous when day > 12)
     "%B %d %Y",     # March 10 2026
     "%b %d %Y",     # Mar 10 2026
     "%B %d, %Y",    # March 10, 2026
