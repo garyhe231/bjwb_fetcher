@@ -375,33 +375,81 @@ def run(date_str: str, output_dir: Optional[str] = None):
 
 
 # ---------------------------------------------------------------------------
+# Date range helper
+# ---------------------------------------------------------------------------
+
+def date_range(start: str, end: str) -> List[str]:
+    """Return list of YYYYMMDD strings from start to end inclusive."""
+    from datetime import timedelta
+    s = datetime.strptime(start, "%Y%m%d")
+    e = datetime.strptime(end, "%Y%m%d")
+    if s > e:
+        print(f"Error: start date {start} is after end date {end}.")
+        sys.exit(1)
+    days = []
+    cur = s
+    while cur <= e:
+        days.append(cur.strftime("%Y%m%d"))
+        cur += timedelta(days=1)
+    return days
+
+
+def run_range(start: str, end: str, output_dir: Optional[str] = None):
+    days = date_range(start, end)
+    print(f"\n批量下载：{start} → {end}，共 {len(days)} 天\n")
+    failed = []
+    for i, date_str in enumerate(days, 1):
+        print(f"{'─' * 60}")
+        print(f"[{i}/{len(days)}] {date_str}")
+        try:
+            run(date_str, output_dir)
+        except SystemExit:
+            failed.append(date_str)
+            print(f"  跳过 {date_str}（无法获取或未出版）\n")
+    print(f"\n{'=' * 60}")
+    print(f"批量完成：{len(days) - len(failed)}/{len(days)} 天成功")
+    if failed:
+        print(f"  失败/跳过：{', '.join(failed)}")
+    print(f"{'=' * 60}\n")
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
 def main():
     parser = argparse.ArgumentParser(
-        description="北京晚报 Fetcher — download page PDFs and all articles for a given date",
+        description="北京晚报 Fetcher — download page PDFs and all articles for a given date or date range",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   python3 bjwb_fetch.py 20260310
   python3 bjwb_fetch.py 20260310 --output ~/Downloads/bjwb
+  python3 bjwb_fetch.py 20260301 20260310
+  python3 bjwb_fetch.py 20260301 20260310 --output ~/Downloads/bjwb
   python3 bjwb_fetch.py           # defaults to today
 """,
     )
     parser.add_argument(
-        "date",
-        nargs="?",
-        default=datetime.today().strftime("%Y%m%d"),
-        help="Date in YYYYMMDD format (default: today)",
+        "dates",
+        nargs="*",
+        help="Date in YYYYMMDD format, or two dates for a range (start end). Defaults to today.",
     )
     parser.add_argument(
         "--output", "-o",
         default=None,
-        help="Output directory (default: ./bjwb_YYYYMMDD/)",
+        help="Output directory (default: ./bjwb_YYYYMMDD/ per day)",
     )
     args = parser.parse_args()
-    run(args.date, args.output)
+
+    if len(args.dates) == 0:
+        run(datetime.today().strftime("%Y%m%d"), args.output)
+    elif len(args.dates) == 1:
+        run(args.dates[0], args.output)
+    elif len(args.dates) == 2:
+        run_range(args.dates[0], args.dates[1], args.output)
+    else:
+        parser.error("Provide one date or two dates (start end) for a range.")
 
 
 if __name__ == "__main__":

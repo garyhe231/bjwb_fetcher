@@ -11,6 +11,12 @@ python3 bjwb_fetch.py 20260310
 # Specific date with custom output directory
 python3 bjwb_fetch.py 20260310 --output ~/Downloads/bjwb
 
+# Date range (start end, inclusive)
+python3 bjwb_fetch.py 20260301 20260310
+
+# Date range with custom output directory
+python3 bjwb_fetch.py 20260301 20260310 --output ~/Downloads/bjwb
+
 # Today's paper (default)
 python3 bjwb_fetch.py
 ```
