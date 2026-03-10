@@ -29,7 +29,6 @@ The date argument is flexible — all of the following are equivalent:
 | `YYYY/MM/DD` | `2026/03/10` |
 | `YYYY.MM.DD` | `2026.03.10` |
 | `MM/DD/YYYY` | `03/10/2026` |
-| `DD/MM/YYYY` | `10/03/2026` |
 | `Month DD YYYY` | `March 10 2026` |
 | `Mon DD YYYY` | `Mar 10 2026` |
 | `Month DD, YYYY` | `March 10, 2026` |
