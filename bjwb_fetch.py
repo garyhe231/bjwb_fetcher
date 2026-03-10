@@ -375,14 +375,47 @@ def run(date_str: str, output_dir: Optional[str] = None):
 
 
 # ---------------------------------------------------------------------------
+# Flexible date parsing
+# ---------------------------------------------------------------------------
+
+_DATE_FORMATS = [
+    "%Y%m%d",       # 20260310
+    "%Y-%m-%d",     # 2026-03-10
+    "%Y/%m/%d",     # 2026/03/10
+    "%Y.%m.%d",     # 2026.03.10
+    "%d/%m/%Y",     # 10/03/2026
+    "%m/%d/%Y",     # 03/10/2026
+    "%d-%m-%Y",     # 10-03-2026
+    "%B %d %Y",     # March 10 2026
+    "%b %d %Y",     # Mar 10 2026
+    "%B %d, %Y",    # March 10, 2026
+    "%b %d, %Y",    # Mar 10, 2026
+    "%d %B %Y",     # 10 March 2026
+    "%d %b %Y",     # 10 Mar 2026
+]
+
+def parse_date(s: str) -> str:
+    """Parse a date string in any supported format, return YYYYMMDD."""
+    s = s.strip()
+    for fmt in _DATE_FORMATS:
+        try:
+            return datetime.strptime(s, fmt).strftime("%Y%m%d")
+        except ValueError:
+            continue
+    print(f"Error: cannot parse date '{s}'.")
+    print("Accepted formats: 20260310, 2026-03-10, 2026/03/10, Mar 10 2026, March 10 2026, 10/03/2026, etc.")
+    sys.exit(1)
+
+
+# ---------------------------------------------------------------------------
 # Date range helper
 # ---------------------------------------------------------------------------
 
 def date_range(start: str, end: str) -> List[str]:
     """Return list of YYYYMMDD strings from start to end inclusive."""
     from datetime import timedelta
-    s = datetime.strptime(start, "%Y%m%d")
-    e = datetime.strptime(end, "%Y%m%d")
+    s = datetime.strptime(parse_date(start), "%Y%m%d")
+    e = datetime.strptime(parse_date(end), "%Y%m%d")
     if s > e:
         print(f"Error: start date {start} is after end date {end}.")
         sys.exit(1)
@@ -424,9 +457,10 @@ def main():
         epilog="""
 Examples:
   python3 bjwb_fetch.py 20260310
-  python3 bjwb_fetch.py 20260310 --output ~/Downloads/bjwb
-  python3 bjwb_fetch.py 20260301 20260310
-  python3 bjwb_fetch.py 20260301 20260310 --output ~/Downloads/bjwb
+  python3 bjwb_fetch.py 2026-03-10
+  python3 bjwb_fetch.py "March 10 2026"
+  python3 bjwb_fetch.py 2026-03-01 2026-03-10
+  python3 bjwb_fetch.py 2026-03-01 2026-03-10 --output ~/Downloads/bjwb
   python3 bjwb_fetch.py           # defaults to today
 """,
     )
@@ -445,9 +479,9 @@ Examples:
     if len(args.dates) == 0:
         run(datetime.today().strftime("%Y%m%d"), args.output)
     elif len(args.dates) == 1:
-        run(args.dates[0], args.output)
+        run(parse_date(args.dates[0]), args.output)
     elif len(args.dates) == 2:
-        run_range(args.dates[0], args.dates[1], args.output)
+        run_range(parse_date(args.dates[0]), parse_date(args.dates[1]), args.output)
     else:
         parser.error("Provide one date or two dates (start end) for a range.")
 
