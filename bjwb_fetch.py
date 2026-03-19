@@ -39,28 +39,33 @@ HEADERS = {
 }
 
 
-def fetch(url: str, binary: bool = False, encoding: str = "utf-8"):
-    req = Request(url, headers=HEADERS)
-    try:
-        with urlopen(req, timeout=20) as resp:
-            data = resp.read()
-            if binary:
-                return data
-            for enc in (encoding, "gbk", "utf-8", "gb18030"):
-                try:
-                    return data.decode(enc)
-                except (UnicodeDecodeError, LookupError):
-                    continue
-            return data.decode("utf-8", errors="replace")
-    except HTTPError as e:
-        print(f"  HTTP {e.code}: {url}")
-        return None
-    except URLError as e:
-        print(f"  URL error ({e.reason}): {url}")
-        return None
-    except Exception as e:
-        print(f"  fetch error ({e}): {url}")
-        return None
+def fetch(url: str, binary: bool = False, encoding: str = "utf-8", retries: int = 3):
+    for attempt in range(1, retries + 1):
+        req = Request(url, headers=HEADERS)
+        try:
+            with urlopen(req, timeout=20) as resp:
+                data = resp.read()
+                if binary:
+                    return data
+                for enc in (encoding, "gbk", "utf-8", "gb18030"):
+                    try:
+                        return data.decode(enc)
+                    except (UnicodeDecodeError, LookupError):
+                        continue
+                return data.decode("utf-8", errors="replace")
+        except HTTPError as e:
+            if e.code in (404, 403):
+                print(f"  HTTP {e.code}: {url}")
+                return None
+            print(f"  HTTP {e.code} (attempt {attempt}/{retries}): {url}")
+        except URLError as e:
+            print(f"  URL error (attempt {attempt}/{retries}): {url}")
+        except Exception as e:
+            print(f"  fetch error (attempt {attempt}/{retries}): {url}")
+        if attempt < retries:
+            time.sleep(2 * attempt)
+    print(f"  FAILED after {retries} attempts: {url}")
+    return None
 
 
 # ---------------------------------------------------------------------------
